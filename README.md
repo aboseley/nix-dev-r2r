@@ -10,7 +10,7 @@ Or use the standard installer then enable flakes
 
 
 ## Enter the r2r dev environment
-`nix develop  https://github.com/aboseley/nix-dev-r2r`
+`nix develop  github:aboseley/nix-dev-r2r`
 
 then build it as normal
 `cargo build`
