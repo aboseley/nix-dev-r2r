@@ -1,29 +1,39 @@
 {
-  description = "A devShell for https://github.com/sequenceplanner/r2r.git ";
+  description = "Rust + bindgen + ROS devShell using fenix and nix-ros-overlay";
 
   inputs = {
-    nix-ros-overlay.url = "github:lopsided98/nix-ros-overlay/master";
-    flake-utils.url = "github:numtide/flake-utils";
+    nix-ros-overlay.url = "github:lopsided98/nix-ros-overlay";
     nixpkgs.follows = "nix-ros-overlay/nixpkgs";
+
+    flake-utils.url = "github:numtide/flake-utils";
     fenix.url = "github:nix-community/fenix";
   };
 
-  outputs = { self, nix-ros-overlay, flake-utils, nixpkgs, fenix, ... }:
+  outputs = { self, nixpkgs, flake-utils, fenix, nix-ros-overlay, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
+        overlays = [
+          nix-ros-overlay.overlays.default
+        ];
+
         pkgs = import nixpkgs {
-          inherit system;
-          overlays =
-            [ nix-ros-overlay.overlays.default fenix.overlays.default ];
+          inherit system overlays;
         };
-      in {
+
+        rustToolchain = fenix.packages.${system}.stable.toolchain;
+
+        rosPackages = pkgs.rosPackages.humble;
+      in
+      {
         devShells.default = pkgs.mkShell {
-          packages = [
-            pkgs.colcon
-            pkgs.fenix.stable.toolchain
-            pkgs.rustPlatform.bindgenHook
+          buildInputs = [
+            rustToolchain
+            pkgs.clang
+            pkgs.llvmPackages.libclang
             pkgs.pkg-config
-            (with pkgs.rosPackages.humble; buildEnv { paths = [ ros-core ]; })
+            pkgs.colcon
+            rosPackages.ros-core
+            pkgs.rustPlatform.bindgenHook
           ];
         };
       });
